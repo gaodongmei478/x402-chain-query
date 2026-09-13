@@ -1,0 +1,13 @@
+name = "x402-chain-query"
+main = "src/worker.ts"
+compatibility_date = "2026-09-01"
+compatibility_flags = ["nodejs_compat"]
+
+[vars]
+PAY_TO = "0xc8aaea11c93a438e2fc7bd5cddb9a6936ed3595c"
+NETWORK = "eip155:8453"
+BASE_RPC_URL = "https://mainnet.base.org"
+FACILITATOR_URL = "https://api.cdp.coinbase.com/platform/v2/x402"
+PRICE_BALANCE = "$0.01"
+PRICE_GAS = "$0.01"
+FREE_TRIAL_LIMIT = "10"
