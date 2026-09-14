@@ -3,9 +3,10 @@ import { FACILITATOR_URL, NETWORK } from "./config.js";
 
 type SupportedLike = Awaited<ReturnType<HTTPFacilitatorClient["getSupported"]>>;
 
+const CDP_HOST_MARKER = "api.cdp.coinbase.com";
+
 /**
- * Minimal supported payload so initialize() works without CDP JWT.
- * ExactEvmScheme ignores supportedKind extras; verify/settle still need CDP keys.
+ * Minimal supported payload so initialize() works if remote /supported fails.
  * Never use the x402.org test facilitator for mainnet / real money.
  */
 function localSupportedStub(): SupportedLike {
@@ -25,22 +26,25 @@ function localSupportedStub(): SupportedLike {
 }
 
 /**
- * HTTPFacilitatorClient → CDP mainnet facilitator URL.
- * With CDP_API_KEY_ID + CDP_API_KEY_SECRET uses createCdpFacilitatorClient.
- * Without keys, getSupported falls back to a local stub for unpaid 402 demos.
+ * Default: plain HTTPFacilitatorClient(FACILITATOR_URL) — PayAI needs no keys.
+ * CDP only when BOTH CDP_API_KEY_ID + CDP_API_KEY_SECRET are set AND
+ * FACILITATOR_URL still points at api.cdp.coinbase.com.
  */
 export async function createFacilitatorClient(): Promise<HTTPFacilitatorClient> {
   const apiKeyId = process.env.CDP_API_KEY_ID;
   const apiKeySecret = process.env.CDP_API_KEY_SECRET;
+  const useCdp =
+    Boolean(apiKeyId && apiKeySecret) &&
+    FACILITATOR_URL.includes(CDP_HOST_MARKER);
 
-  if (apiKeyId && apiKeySecret) {
+  if (useCdp) {
     try {
       const { createCdpFacilitatorClient } = await import(
         "@coinbase/cdp-sdk/x402"
       );
       const client = createCdpFacilitatorClient({
-        apiKeyId,
-        apiKeySecret,
+        apiKeyId: apiKeyId!,
+        apiKeySecret: apiKeySecret!,
         baseUrl: FACILITATOR_URL,
       });
       return client as unknown as HTTPFacilitatorClient;
@@ -50,11 +54,6 @@ export async function createFacilitatorClient(): Promise<HTTPFacilitatorClient> 
         err instanceof Error ? err.message : err,
       );
     }
-  } else {
-    console.warn(
-      "[facilitator] CDP_API_KEY_ID / CDP_API_KEY_SECRET not set. " +
-        "Local /supported stub enabled; verify/settle need CDP keys.",
-    );
   }
 
   const client = new HTTPFacilitatorClient({ url: FACILITATOR_URL });

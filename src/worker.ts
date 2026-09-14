@@ -24,6 +24,8 @@ type Env = {
   CDP_API_KEY_SECRET?: string;
 };
 
+const CDP_HOST_MARKER = "api.cdp.coinbase.com";
+
 const app = new Hono<{ Bindings: Env }>();
 app.use(
   "*",
@@ -68,19 +70,27 @@ app.get("/health", (c) =>
   }),
 );
 
+/**
+ * Prefer plain HTTPFacilitatorClient(FACILITATOR_URL) (PayAI needs no keys).
+ * Only use createCdpFacilitatorClient when BOTH CDP secrets are set AND
+ * FACILITATOR_URL still points at the CDP host.
+ */
 async function createWorkerFacilitator(env: Env): Promise<HTTPFacilitatorClient> {
   const apiKeyId = env.CDP_API_KEY_ID;
   const apiKeySecret = env.CDP_API_KEY_SECRET;
-  if (apiKeyId && apiKeySecret) {
+  const url = env.FACILITATOR_URL;
+  const useCdp =
+    Boolean(apiKeyId && apiKeySecret) && url.includes(CDP_HOST_MARKER);
+
+  if (useCdp) {
     const { createCdpFacilitatorClient } = await import("@coinbase/cdp-sdk/x402");
     return createCdpFacilitatorClient({
-      apiKeyId,
-      apiKeySecret,
-      baseUrl: env.FACILITATOR_URL,
+      apiKeyId: apiKeyId!,
+      apiKeySecret: apiKeySecret!,
+      baseUrl: url,
     }) as unknown as HTTPFacilitatorClient;
   }
-  // Without CDP keys: 402 challenge still works; verify/settle will fail.
-  return new HTTPFacilitatorClient({ url: env.FACILITATOR_URL });
+  return new HTTPFacilitatorClient({ url });
 }
 
 app.use("*", async (c, next) => {
