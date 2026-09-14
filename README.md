@@ -1,6 +1,6 @@
 # x402-chain-query
 
-最小可用的 **x402 v2** 卖家（Express）+ 买家冒烟脚本：在 **Base 主网**（`eip155:8453`）上提供两个付费链上查询接口，使用 **exact** 方案与 **CDP Facilitator**，并声明 **Bazaar** 发现扩展。
+最小可用的 **x402 v2** 卖家（Express）+ 买家冒烟脚本：在 **Base 主网**（`eip155:8453`）上提供两个付费链上查询接口，使用 **exact** 方案与 **PayAI Facilitator**（默认；非 CDP），并声明 **Bazaar** 发现扩展。
 
 ## 定价与试用
 
@@ -18,7 +18,7 @@
 
 - **网络**: `eip155:8453`（Base mainnet）
 - **收款地址 payTo**: `0xc8aaea11c93a438e2fc7bd5cddb9a6936ed3595c`
-- **Facilitator**: `https://api.cdp.coinbase.com/platform/v2/x402`（`HTTPFacilitatorClient`）
+- **Facilitator**: `https://facilitator.payai.network`（`HTTPFacilitatorClient`；可选 Heurist / Mogami v2；禁止 x402.org 收真钱）
 - **RPC**: 环境变量 `BASE_RPC_URL`，默认 `https://mainnet.base.org`
 
 ## 安装
@@ -26,7 +26,7 @@
 ```bash
 cd x402-chain-query
 cp .env.example .env
-# 编辑 .env：填入 CDP 密钥、买家私钥等（切勿提交真实密钥）
+# 编辑 .env：默认已是 PayAI；买家冒烟才需 EVM_PRIVATE_KEY（切勿提交真实密钥）
 npm install
 ```
 
@@ -34,16 +34,16 @@ npm install
 
 | 变量 | 用途 |
 |------|------|
-| `CDP_API_KEY_ID` / `CDP_API_KEY_SECRET` | **CDP Facilitator 鉴权**（主网 verify/settle 必需）。在 [CDP Portal](https://portal.cdp.coinbase.com/) 创建 |
+| `CDP_API_KEY_ID` / `CDP_API_KEY_SECRET` | **可选**；仅当改回 Coinbase CDP facilitator |
 | `PAY_TO` | 收款地址（默认即上述 payTo） |
 | `BASE_RPC_URL` | Base 公共 RPC |
 | `PORT` | 卖家监听端口（默认 `4021`） |
-| `FACILITATOR_URL` | Facilitator 覆盖（默认 CDP） |
+| `FACILITATOR_URL` | Facilitator 覆盖（默认 PayAI `https://facilitator.payai.network`） |
 | `EVM_PRIVATE_KEY` | 买家冒烟脚本支付用私钥 |
 | `SELLER_URL` | 买家请求的卖家 URL（默认 `http://127.0.0.1:4021`） |
 | `QUERY_ADDRESS` | 买家查询余额的示例地址 |
 
-未配置 CDP 密钥时：仍可返回 **402 Payment Required**（便于 curl 演示），但 **verify/settle 会失败**。
+默认 PayAI：**无需 CDP 密钥**即可 verify/settle。勿将 `FACILITATOR_URL` 设为 x402.org 测试 facilitator 收真钱。
 
 ## 运行卖家
 

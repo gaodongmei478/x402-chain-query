@@ -7,7 +7,10 @@ compatibility_flags = ["nodejs_compat"]
 PAY_TO = "0xc8aaea11c93a438e2fc7bd5cddb9a6936ed3595c"
 NETWORK = "eip155:8453"
 BASE_RPC_URL = "https://mainnet.base.org"
-FACILITATOR_URL = "https://api.cdp.coinbase.com/platform/v2/x402"
+# Default: PayAI production facilitator (no API key for free tier).
+# CDP URL is an optional override if CDP_API_KEY_ID + CDP_API_KEY_SECRET are set later.
+# NEVER use https://x402.org/facilitator for mainnet / real money.
+FACILITATOR_URL = "https://facilitator.payai.network"
 PRICE_BALANCE = "$0.01"
 PRICE_GAS = "$0.01"
 FREE_TRIAL_LIMIT = "10"

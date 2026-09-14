@@ -5,7 +5,7 @@ export const NETWORK = "eip155:8453" as const;
 
 /**
  * Base Sepolia (`eip155:84532`) is documented only for local smoke against a
- * test facilitator — never point real money / CDP mainnet settle at Sepolia,
+ * test facilitator — never point real money / mainnet settle at Sepolia,
  * and never use the x402.org test facilitator for mainnet funds.
  */
 export const NETWORK_SEPOLIA_SMOKE = "eip155:84532" as const;
@@ -13,9 +13,9 @@ export const NETWORK_SEPOLIA_SMOKE = "eip155:84532" as const;
 export const PAY_TO = (process.env.PAY_TO ??
   "0xc8aaea11c93a438e2fc7bd5cddb9a6936ed3595c") as Address;
 
+/** Default: PayAI production facilitator (no API key for free tier). */
 export const FACILITATOR_URL =
-  process.env.FACILITATOR_URL ??
-  "https://api.cdp.coinbase.com/platform/v2/x402";
+  process.env.FACILITATOR_URL ?? "https://facilitator.payai.network";
 
 export const BASE_RPC_URL =
   process.env.BASE_RPC_URL ?? "https://mainnet.base.org";
