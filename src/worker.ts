@@ -68,11 +68,26 @@ app.get("/health", (c) =>
   }),
 );
 
+async function createWorkerFacilitator(env: Env): Promise<HTTPFacilitatorClient> {
+  const apiKeyId = env.CDP_API_KEY_ID;
+  const apiKeySecret = env.CDP_API_KEY_SECRET;
+  if (apiKeyId && apiKeySecret) {
+    const { createCdpFacilitatorClient } = await import("@coinbase/cdp-sdk/x402");
+    return createCdpFacilitatorClient({
+      apiKeyId,
+      apiKeySecret,
+      baseUrl: env.FACILITATOR_URL,
+    }) as unknown as HTTPFacilitatorClient;
+  }
+  // Without CDP keys: 402 challenge still works; verify/settle will fail.
+  return new HTTPFacilitatorClient({ url: env.FACILITATOR_URL });
+}
+
 app.use("*", async (c, next) => {
   const path = new URL(c.req.url).pathname;
   if (path === "/health") return next();
 
-  const facilitator = new HTTPFacilitatorClient({ url: c.env.FACILITATOR_URL });
+  const facilitator = await createWorkerFacilitator(c.env);
   const network = "eip155:8453" as const;
   const resourceServer = new x402ResourceServer(facilitator).register(
     network,

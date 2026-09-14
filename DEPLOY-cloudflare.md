@@ -1,24 +1,35 @@
-# Cloudflare Workers 部署路径（已定默认）
+# Cloudflare Workers 部署（默认公网路径）
 
-Express 直跑在 Workers 上不完整；本仓当前是 **Node/Express 可跑源**。上公网默认路径：
+入口：`wrangler.toml` + `src/worker.ts`（Hono + `@x402/hono`）。
 
-## 推荐（短期可上线）
-1. 先把本服务跑在支持 Node 的边缘/容器（Cloudflare **Containers** / **Workers + nodejs_compat** 实验，或临时 Fly/Railway）拿 **HTTPS 公网 URL**。
-2. Bazaar 需要公网 HTTPS + **≥1 笔主人自签 settle**（≤$1）才会索引。本桌不代签。
-3. 环境变量（Workers Secrets / 平台 secrets）：
-   - `CDP_API_KEY_ID`
-   - `CDP_API_KEY_SECRET`
-   - `PAY_TO`（默认已写死公开地址）
-   - `BASE_RPC_URL`
-   - `FREE_TRIAL_LIMIT=10`
-   - **不要**配置 `EVM_PRIVATE_KEY` 到公网卖家
+## 已写入 `[vars]`（非密钥）
+- `PAY_TO` / `NETWORK=eip155:8453` / `BASE_RPC_URL`
+- `FACILITATOR_URL=https://api.cdp.coinbase.com/platform/v2/x402`（勿用 x402.org 测试 facilitator）
+- `PRICE_BALANCE=$0.01` / `PRICE_GAS=$0.01` / `FREE_TRIAL_LIMIT=10`
 
-## 中期（真·Workers）
-把卖家迁到 `@x402/hono` + Cloudflare Worker（本仓预留下一 PR）：
-- `wrangler.toml` + `src/worker.ts`（Hono）
-- 同路由：`/balance` `/gas` `/health`
-- 同 x402 exact / Base / CDP / Bazaar
+## 主人需配置的 Secrets（`wrangler secret put`）
+- `CDP_API_KEY_ID`
+- `CDP_API_KEY_SECRET`
+
+部署机环境还需：
+- `CLOUDFLARE_API_TOKEN`（Edit Cloudflare Workers）
+- `CLOUDFLARE_ACCOUNT_ID`（可选但建议）
+
+**不要**把 `EVM_PRIVATE_KEY` 配进卖家 Worker。
+
+## 部署
+```bash
+npm ci
+npx wrangler secret put CDP_API_KEY_ID
+npx wrangler secret put CDP_API_KEY_SECRET
+npx wrangler deploy
+```
 
 ## 验收
-- `curl -i https://<host>/gas` → 402（试用耗尽后）或 200（试用内）
-- 付费成功后 JSON 字段见 README / 副总 schema 回执
+- `GET /health` → 200，含 payTo / prices / network
+- 试用内：`GET /gas` 或 `/balance` 可 200
+- 试用尽：返回 **402** + `PAYMENT-REQUIRED`
+- 付 USDC（exact）settle 成功后返回查询 JSON
+
+## 已知限制
+- 免费试用计数为 Worker 内存 Map：冷启动/多 isolate 会重置，非持久配额。
